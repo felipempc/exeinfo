@@ -1,6 +1,6 @@
 /***************************************************************
- * Name:      EXEInfoMain.cpp
- * Purpose:   Code for Application Frame
+ * Name:      EXEInfoApp.cpp
+ * Purpose:   Code for Application window
  * Author:     ()
  * Created:   2015-04-27
  * Copyright:  ()
