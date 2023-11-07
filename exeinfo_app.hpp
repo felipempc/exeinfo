@@ -30,6 +30,8 @@ class EXEInfoWindow: public Gtk::Window
 
         Gtk::Box m_ButtonBox;
         Gtk::Button m_Button_Quit, m_Button_Open;
+
+        Glib::RefPtr<Gtk::TextBuffer> m_textbuffer;
         
 
         void OnButtonOpen();

@@ -3,7 +3,8 @@
 
 typedef unsigned char byte;
 typedef unsigned short word;
-typedef unsigned long dword;
+typedef unsigned int dword;
+typedef unsigned long qword;
 
 #define MZSIGNATURE 0x4D5A
 

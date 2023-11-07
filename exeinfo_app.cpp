@@ -14,7 +14,7 @@
 EXEInfoWindow::EXEInfoWindow()
     : m_VBox(Gtk::Orientation::VERTICAL),
       m_Button_Quit("_Quit", true),
-      m_Button_Open("_Open")
+      m_Button_Open("_Open", true)
 {
     set_title("EXE file info");
     set_default_size(600,600);
@@ -39,12 +39,11 @@ EXEInfoWindow::EXEInfoWindow()
     m_Button_Quit.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonQuit));
     m_Button_Open.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonOpen));
 
-/*
-    int sbyte = sizeof(unsigned char),
-        sword = sizeof(unsigned short),
-        sdword = sizeof(unsigned long);
-    log_panel->AppendText(wxString::Format("Size of byte = %d\nSize of word = %d\nSize of dword = %d\n", sbyte, sword, sdword));
-*/
+    m_textbuffer = m_TextView.get_buffer();
+    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("byte = %1.\n", sizeof(byte) * 8));
+    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("word = %1.\n", sizeof(word) * 8));
+    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("dword = %1.\n", sizeof(dword) * 8));
+    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("qword = %1.\n", sizeof(qword) * 8));
 }
 
 
