@@ -9,6 +9,8 @@
 
 
 #include "exeinfo_app.hpp"
+#include <iostream>
+#include <fstream>
 
 
 EXEInfoWindow::EXEInfoWindow()
@@ -36,78 +38,121 @@ EXEInfoWindow::EXEInfoWindow()
     m_ButtonBox.set_margin(5);
     m_ButtonBox.set_spacing(5);
 
-    m_Button_Quit.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonQuit));
-    m_Button_Open.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonOpen));
+    m_Button_Quit.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonQuitClicked));
+    m_Button_Open.signal_clicked().connect(sigc::mem_fun(*this, &EXEInfoWindow::OnButtonOpenClicked));
+
 
     m_textbuffer = m_TextView.get_buffer();
-    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("byte = %1.\n", sizeof(byte) * 8));
-    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("word = %1.\n", sizeof(word) * 8));
-    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("dword = %1.\n", sizeof(dword) * 8));
-    m_textbuffer->insert_interactive_at_cursor(Glib::ustring::compose("qword = %1.\n", sizeof(qword) * 8));
 }
 
 
-void EXEInfoWindow::OnButtonQuit()
+void EXEInfoWindow::OnButtonQuitClicked()
 {
-    unset_application();
+    close();
 }
 
 
-void EXEInfoWindow::OnButtonOpen()
+void EXEInfoWindow::OnButtonOpenClicked()
 {
-/*
-    mzheader    fileheader;
+  auto dialog = Gtk::FileDialog::create();
+  dialog->set_title("Escolha o arquivo executável");
 
-    unsigned int filesize = 0,
-                bytesread = 0;
-    wxFile exefile;
-    wxString caption = "Choose a file";
-    wxString wildcard = "Exe files|*.exe|All files (*.*)|*.*";
-    wxFileDialog dialog(this, caption, wxEmptyString, wxEmptyString, wildcard, wxFD_OPEN);
+  auto filters = Gio::ListStore<Gtk::FileFilter>::create();
 
-    memset(&fileheader, 0, sizeof(mzheader));
+  auto filter_exe = Gtk::FileFilter::create();
+  filter_exe->set_name("EXE files");
+  filter_exe->add_pattern("*.exe");
+  filters->append(filter_exe);
 
-    if (dialog.ShowModal() == wxID_OK)
-    {
-        log_panel->AppendText("Opening :" + dialog.GetPath() + "\n");
-        if (exefile.Open(dialog.GetPath()))
-        {
-            bytesread = exefile.Read(&fileheader, sizeof(mzheader));
-            log_panel->AppendText(wxString::Format("Read = %d\n\n", bytesread));
-            ShowExeInfo(fileheader);
-            //filesize = static_cast<unsigned int>(exefile.Length());
-            //readbuffer = filebuffer.GetWriteBuf(filesize);
-        }
-        else
-            log_panel->AppendText("Couldn't open file.\n");
-    }
-*/
+  auto filter_any = Gtk::FileFilter::create();
+  filter_any->set_name("Any files");
+  filter_any->add_pattern("*");
+  filters->append(filter_any);
+
+  dialog->set_filters(filters);
+  dialog->set_default_filter(filter_exe);
+
+  // Show the dialog and wait for a user response:
+  dialog->open(sigc::bind(sigc::mem_fun(*this, &EXEInfoWindow::OnFileDialogFinished), dialog));
+
 }
 
+
+void EXEInfoWindow::OnFileDialogFinished(const Glib::RefPtr<Gio::AsyncResult>& result, const Glib::RefPtr<Gtk::FileDialog>& dialog)
+{
+  try
+  {
+    auto file = dialog->open_finish(result);
+
+    // Notice that this is a std::string, not a Glib::ustring.
+    auto filename = file->get_path();
+    std::cout << "File selected: " <<  filename << std::endl;
+    LoadFile(m_exefileheader, filename);
+    ShowExeInfo(m_exefileheader);
+  }
+  catch (const Gtk::DialogError& err)
+  {
+    // Can be thrown by dialog->open_finish(result).
+    std::cout << "No file selected. " << err.what() << std::endl;
+  }
+  catch (const Glib::Error& err)
+  {
+    std::cout << "Unexpected exception. " << err.what() << std::endl;
+  }
+}
 
 
 void EXEInfoWindow::ShowExeInfo(mzheader &header)
 {
-/*
     if (header.ID != MZSIGNATURE)
     {
-        log_panel->AppendText("MZ signature not found !\n");
+        Print("MZ signature not found !\n");
         return;
     }
 
-    log_panel->AppendText(wxString::Format("ID = %.4X\n", header.ID));
-    log_panel->AppendText(wxString::Format("Num bytes in last 512-bytes page = %d\n", header.nbytespage));
-    log_panel->AppendText(wxString::Format("Total number of 512-byte pages = %d\n", header.totalpages));
-    log_panel->AppendText(wxString::Format("Num relocation entries = %d\n", header.nrelocentries));
-    log_panel->AppendText(wxString::Format("Header size (paragraphs) = %d\n", header.headersizeparagraphs));
-    log_panel->AppendText(wxString::Format("Minimum paragraphs of memory = %d\n", header.minparagmem));
-    log_panel->AppendText(wxString::Format("Maximum num of paragraphs = %d\n", header.maxparag));
-    log_panel->AppendText(wxString::Format("Initial SS relative start = %d\n", header.initssrelstart));
-    log_panel->AppendText(wxString::Format("Initial SP = %.4X\n", header.initsp));
-    log_panel->AppendText(wxString::Format("Checksum = %.4X\n", header.checksum));
-    log_panel->AppendText(wxString::Format("CS:SP relative to start = %.4X\n", header.csip_start));
-    log_panel->AppendText(wxString::Format("Offset of reloc table = %.4X\n", header.offsetreloctable));
-    log_panel->AppendText(wxString::Format("Overlay number = %d\n", header.overlaynumber));
-*/
+
+    Print(Glib::ustring::compose("ID = %1\n", Glib::ustring::format(std::hex, header.ID)));
+    Print(Glib::ustring::compose("Num bytes in last 512-bytes page = %1\n", header.nbytespage));
+    Print(Glib::ustring::compose("Total number of 512-byte pages = %1\n", header.totalpages));
+    Print(Glib::ustring::compose("Num relocation entries = %1\n", header.nrelocentries));
+    Print(Glib::ustring::compose("Header size (paragraphs) = %1\n", header.headersizeparagraphs));
+    Print(Glib::ustring::compose("Minimum paragraphs of memory = %1\n", header.minparagmem));
+    Print(Glib::ustring::compose("Maximum num of paragraphs = %1\n", header.maxparag));
+    Print(Glib::ustring::compose("Initial SS relative start = %1\n", header.initssrelstart));
+    Print(Glib::ustring::compose("Initial SP = %1\n", header.initsp));
+    Print(Glib::ustring::compose("Checksum = %1\n", header.checksum));
+    Print(Glib::ustring::compose("CS:SP relative to start = %1\n", header.csip_start));
+    Print(Glib::ustring::compose("Offset of reloc table = %1\n", header.offsetreloctable));
+    Print(Glib::ustring::compose("Overlay number = %1\n", header.overlaynumber));
 }
 
+
+
+void EXEInfoWindow::LoadFile(mzheader &header, std::string const &filepath)
+{
+    std::ifstream ifs(filepath, std::ios::binary|std::ios::ate);
+
+    if(!ifs)
+        throw std::runtime_error(filepath + ": "/* + std::strerror(errno)*/);
+
+    auto end = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+    auto size = std::size_t(end - ifs.tellg());
+
+    Print(Glib::ustring::compose("Size of file = %1.\n", size));
+
+    if(size == 0)
+        return;
+
+    ifs.seekg(0);
+    if(!ifs.read((char*) &header, sizeof(mzheader)))
+        throw std::runtime_error(filepath + ": "/* + std::strerror(errno)*/);
+    Print("File read!\n");
+}
+
+
+/** Print a string on textbuffer */
+void EXEInfoWindow::Print(Glib::ustring printstring)
+{
+  m_textbuffer->insert_interactive_at_cursor(printstring);
+}

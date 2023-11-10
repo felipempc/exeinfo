@@ -21,9 +21,8 @@ class EXEInfoWindow: public Gtk::Window
 {
     public:
         EXEInfoWindow();
-        //~EXEInfoWindow() override;
+        //~EXEInfoWindow();
     private:
-        //wxTextCtrl  *log_panel;
         Gtk::Box m_VBox;
         Gtk::ScrolledWindow m_ScrolledWindow;
         Gtk::TextView m_TextView;
@@ -32,12 +31,18 @@ class EXEInfoWindow: public Gtk::Window
         Gtk::Button m_Button_Quit, m_Button_Open;
 
         Glib::RefPtr<Gtk::TextBuffer> m_textbuffer;
+
+        mzheader m_exefileheader;
         
 
-        void OnButtonOpen();
-        void OnButtonQuit();
+        void OnButtonOpenClicked();
+        void OnButtonQuitClicked();
+        void OnFileDialogFinished(const Glib::RefPtr<Gio::AsyncResult>& result,
+                                    const Glib::RefPtr<Gtk::FileDialog>& dialog);
 
         void ShowExeInfo(mzheader &header);
+        void LoadFile(mzheader &header, std::string const& filepath);
+        void Print(Glib::ustring printstring);
 
 };
 
